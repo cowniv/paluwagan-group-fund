@@ -1,3 +1,6 @@
 {
   "name": "paluwagan-group-fund",
   "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client",

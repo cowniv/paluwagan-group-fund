@@ -83,3 +83,46 @@ function CycleCard({ cycle, group, me, nameOf, onChange }: { cycle: Cycle; group
       setError((e as Error).message);
     }
   }
+
+  return (
+    <section className={`card ${isCurrent ? "border-brand" : ""}`}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-semibold">
+          Cycle {cycle.cycle} <span className="font-normal text-slate-500">· due {fmtDate(cycle.dueDate)} · pot goes to {nameOf(cycle.recipientId)}</span>
+        </h2>
+        <span className="text-xs text-slate-500">
+          {cycle.paidCount}/{group.members.length} paid
+        </span>
+      </div>
+
+      <ul className="mb-3 grid gap-1 text-sm sm:grid-cols-2">
+        {cycle.payments.map((p) => (
+          <li key={p.userId} className="flex items-center gap-2">
+            <span className={`h-2 w-2 rounded-full ${p.paid ? "bg-emerald-500" : "bg-slate-300"}`} />
+            {nameOf(p.userId)}
+            {p.proofNote && <span className="truncate text-xs text-slate-400">({p.proofNote})</span>}
+          </li>
+        ))}
+      </ul>
+
+      {myPayment && !myPayment.paid && (
+        <div className="mb-3 flex gap-2">
+          <input className="input" placeholder="Proof note, e.g. GCash ref 1234" value={proof} onChange={(e) => setProof(e.target.value)} />
+          <button className="btn shrink-0" onClick={() => act(() => api(`/groups/${group.id}/contributions`, { method: "POST", body: { cycle: cycle.cycle, proofNote: proof } }))}>
+            Record my {peso(group.contributionAmount)}
+          </button>
+        </div>
+      )}
+
+      {!payout && allPaid && (
+        <button className="btn-ghost" onClick={() => act(() => api(`/groups/${group.id}/payouts`, { method: "POST", body: { cycle: cycle.cycle } }))}>
+          Request payout of {peso(group.pot)} to {nameOf(cycle.recipientId)}
+        </button>
+      )}
+
+      {payout && (
+        <div className={`rounded-lg p-3 text-sm ${payout.status === "released" ? "bg-emerald-50" : "bg-amber-50"}`}>
+          <p className="font-medium">
+            Payout {peso(payout.amount)} to {nameOf(payout.recipientId)} ·{" "}
+            {payout.status === "released" ? `released ${fmtDate(payout.releasedAt!)}` : `pending (${payout.approvals.length}/${payout.required} approvals)`}
+          </p>

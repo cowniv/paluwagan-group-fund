@@ -47,3 +47,12 @@ export default function AuthForm({ onAuthed }: { onAuthed: (u: User) => void }) 
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button className="btn w-full" disabled={busy}>
           {busy ? "Please wait…" : mode === "login" ? "Log in" : "Sign up"}
+        </button>
+        <button type="button" className="w-full text-sm text-brand" onClick={() => setMode(mode === "login" ? "register" : "login")}>
+          {mode === "login" ? "No account yet? Sign up" : "Have an account? Log in"}
+        </button>
+      </form>
+      {mode === "login" && <p className="mt-3 text-center text-xs text-slate-400">Demo: ana@example.com / password123 (after npm run seed)</p>}
+    </div>
+  );
+}

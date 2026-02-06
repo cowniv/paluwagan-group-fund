@@ -95,3 +95,22 @@ function CreateGroupForm({ onCreated }: { onCreated: (id: number) => void }) {
           <option value="monthly">Monthly</option>
         </select>
       </label>
+      <label className="text-sm">
+        First due date
+        <input className="input mt-1" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
+      </label>
+      <label className="flex items-end gap-2 pb-2 text-sm">
+        <input type="checkbox" checked={shuffle} onChange={(e) => setShuffle(e.target.checked)} />
+        Draw rotation order randomly (bunutan)
+      </label>
+      <label className="text-sm sm:col-span-2">
+        Member emails (one per line, in payout order; you're added first)
+        <textarea className="input mt-1 h-24" value={emails} onChange={(e) => setEmails(e.target.value)} />
+      </label>
+      {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
+      <div className="sm:col-span-2">
+        <button className="btn">Create group</button>
+      </div>
+    </form>
+  );
+}

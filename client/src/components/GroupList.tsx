@@ -37,3 +37,22 @@ export default function GroupList({ onOpen }: { onOpen: (id: number) => void }) 
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {groups.map((g) => (
+            <button key={g.id} onClick={() => onOpen(g.id)} className="card text-left transition hover:border-brand">
+              <h2 className="font-semibold">{g.name}</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {peso(g.contributionAmount)} {g.frequency} · {g.memberCount} members
+              </p>
+              <p className="mt-3 text-xs font-medium text-brand">
+                Cycle {g.currentCycle} of {g.memberCount} · pot {peso(g.contributionAmount * g.memberCount)}
+              </p>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CreateGroupForm({ onCreated }: { onCreated: (id: number) => void }) {
+  const [name, setName] = useState("");
+  const [amount, setAmount] = useState(500);

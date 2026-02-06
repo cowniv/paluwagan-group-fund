@@ -27,3 +27,13 @@ export default function AuthForm({ onAuthed }: { onAuthed: (u: User) => void }) 
 
   return (
     <div className="mx-auto max-w-sm">
+      <h1 className="mb-1 text-2xl font-bold">{mode === "login" ? "Welcome back" : "Create an account"}</h1>
+      <p className="mb-6 text-sm text-slate-500">Track your group's paluwagan: who paid, who's next, and where the money went.</p>
+      <form onSubmit={submit} className="card space-y-3">
+        {mode === "register" && (
+          <label className="block text-sm">
+            Name
+            <input className="input mt-1" value={form.name} onChange={set("name")} required />
+          </label>
+        )}
+        <label className="block text-sm">

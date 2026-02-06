@@ -41,3 +41,45 @@ export default function GroupView({ groupId, me, onBack }: { groupId: number; me
       <nav className="mb-4 flex gap-1 border-b border-slate-200">
         {(["cycles", "ledger", "overdue", "audit"] as Tab[]).map((t) => (
           <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm capitalize ${tab === t ? "border-brand font-medium text-brand" : "border-transparent text-slate-500"}`}
+          >
+            {t}
+          </button>
+        ))}
+      </nav>
+
+      {tab === "cycles" && (
+        <div className="space-y-4">
+          {group.cycles.map((c) => (
+            <CycleCard key={c.cycle} cycle={c} group={group} me={me} nameOf={nameOf} onChange={reload} />
+          ))}
+        </div>
+      )}
+      {tab === "ledger" && <LedgerTab groupId={groupId} />}
+      {tab === "overdue" && <OverdueTab groupId={groupId} />}
+      {tab === "audit" && <AuditTab groupId={groupId} nameOf={nameOf} />}
+    </div>
+  );
+}
+
+function CycleCard({ cycle, group, me, nameOf, onChange }: { cycle: Cycle; group: GroupDetail; me: User; nameOf: (id: number) => string; onChange: () => void }) {
+  const [proof, setProof] = useState("");
+  const [error, setError] = useState("");
+  const myPayment = cycle.payments.find((p) => p.userId === me.id);
+  const allPaid = cycle.paidCount === group.members.length;
+  const payout = cycle.payout;
+  const iApproved = payout?.approvals.some((a) => a.userId === me.id);
+  const isCurrent = cycle.cycle === group.currentCycle;
+
+  async function act(fn: () => Promise<unknown>) {
+    setError("");
+    try {
+      await fn();
+      setProof("");
+      onChange();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }

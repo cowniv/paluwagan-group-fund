@@ -56,3 +56,23 @@ export default function GroupList({ onOpen }: { onOpen: (id: number) => void }) 
 function CreateGroupForm({ onCreated }: { onCreated: (id: number) => void }) {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState(500);
+  const [frequency, setFrequency] = useState<Frequency>("weekly");
+  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
+  const [emails, setEmails] = useState("ben@example.com\ncarla@example.com");
+  const [shuffle, setShuffle] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setError("");
+    try {
+      const memberEmails = emails.split(/[\s,]+/).filter(Boolean);
+      const res = await api<{ id: number }>("/groups", {
+        method: "POST",
+        body: { name, contributionAmount: amount, frequency, startDate, memberEmails, shuffle },
+      });
+      onCreated(res.id);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }

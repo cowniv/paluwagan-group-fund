@@ -18,3 +18,12 @@ export default function AuthForm({ onAuthed }: { onAuthed: (u: User) => void }) 
       onAuthed(res.user);
     } catch (err) {
       setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [k]: e.target.value });
+
+  return (
+    <div className="mx-auto max-w-sm">

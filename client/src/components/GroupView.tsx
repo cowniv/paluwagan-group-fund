@@ -126,3 +126,45 @@ function CycleCard({ cycle, group, me, nameOf, onChange }: { cycle: Cycle; group
             Payout {peso(payout.amount)} to {nameOf(payout.recipientId)} ·{" "}
             {payout.status === "released" ? `released ${fmtDate(payout.releasedAt!)}` : `pending (${payout.approvals.length}/${payout.required} approvals)`}
           </p>
+          {payout.approvals.length > 0 && <p className="text-xs text-slate-500">Approved by {payout.approvals.map((a) => a.name).join(", ")}</p>}
+          {payout.status === "pending" && payout.recipientId !== me.id && !iApproved && (
+            <button className="btn mt-2" onClick={() => act(() => api(`/groups/${group.id}/payouts/${payout.id}/approve`, { method: "POST" }))}>
+              Approve payout
+            </button>
+          )}
+          {payout.status === "pending" && payout.recipientId === me.id && <p className="mt-1 text-xs text-slate-500">This is your payout, so the others vote on it.</p>}
+        </div>
+      )}
+
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+    </section>
+  );
+}
+
+function useLoad<T>(path: string) {
+  const [data, setData] = useState<T | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    api<T>(path).then(setData).catch((e) => setError(e.message));
+  }, [path]);
+  return { data, error };
+}
+
+function LedgerTab({ groupId }: { groupId: number }) {
+  const { data, error } = useLoad<{ entries: LedgerEntry[]; balance: number }>(`/groups/${groupId}/ledger`);
+  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (!data) return null;
+  return (
+    <div className="card overflow-x-auto p-0">
+      <table className="w-full text-sm">
+        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+          <tr>
+            <th className="px-4 py-2">Date</th>
+            <th className="px-4 py-2">Cycle</th>
+            <th className="px-4 py-2">Entry</th>
+            <th className="px-4 py-2 text-right">In / Out</th>
+            <th className="px-4 py-2 text-right">Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.entries.map((e, i) => (

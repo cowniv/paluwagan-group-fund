@@ -76,3 +76,22 @@ function CreateGroupForm({ onCreated }: { onCreated: (id: number) => void }) {
       setError((err as Error).message);
     }
   }
+
+  return (
+    <form onSubmit={submit} className="card mb-6 grid gap-3 sm:grid-cols-2">
+      <label className="text-sm sm:col-span-2">
+        Group name
+        <input className="input mt-1" value={name} onChange={(e) => setName(e.target.value)} placeholder="Barkada Ipon 2026" required />
+      </label>
+      <label className="text-sm">
+        Contribution per cycle (₱)
+        <input className="input mt-1" type="number" min={1} step={1} value={amount} onChange={(e) => setAmount(Number(e.target.value))} required />
+      </label>
+      <label className="text-sm">
+        Schedule
+        <select className="input mt-1" value={frequency} onChange={(e) => setFrequency(e.target.value as Frequency)}>
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Every 2 weeks</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </label>

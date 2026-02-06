@@ -37,3 +37,13 @@ export default function AuthForm({ onAuthed }: { onAuthed: (u: User) => void }) 
           </label>
         )}
         <label className="block text-sm">
+          Email
+          <input className="input mt-1" type="email" value={form.email} onChange={set("email")} required />
+        </label>
+        <label className="block text-sm">
+          Password
+          <input className="input mt-1" type="password" value={form.password} onChange={set("password")} minLength={8} required />
+        </label>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <button className="btn w-full" disabled={busy}>
+          {busy ? "Please wait…" : mode === "login" ? "Log in" : "Sign up"}

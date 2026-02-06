@@ -18,3 +18,22 @@ export default function GroupList({ onOpen }: { onOpen: (id: number) => void }) 
         <h1 className="text-2xl font-bold">My groups</h1>
         <button className="btn" onClick={() => setShowForm((s) => !s)}>
           {showForm ? "Close" : "+ New group"}
+        </button>
+      </div>
+
+      {showForm && (
+        <CreateGroupForm
+          onCreated={(id) => {
+            setShowForm(false);
+            load();
+            onOpen(id);
+          }}
+        />
+      )}
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {groups.length === 0 ? (
+        <p className="card text-sm text-slate-500">You're not in any paluwagan yet. Create one and invite your friends.</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {groups.map((g) => (

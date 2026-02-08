@@ -168,3 +168,46 @@ function LedgerTab({ groupId }: { groupId: number }) {
         </thead>
         <tbody>
           {data.entries.map((e, i) => (
+            <tr key={i} className="border-t border-slate-100">
+              <td className="px-4 py-2 text-slate-500">{fmtDate(e.at)}</td>
+              <td className="px-4 py-2">{e.cycle}</td>
+              <td className="px-4 py-2">
+                {e.type === "contribution" ? `${e.who} paid` : `Payout to ${e.who}`} <span className="text-xs text-slate-400">{e.note}</span>
+              </td>
+              <td className={`px-4 py-2 text-right ${e.type === "contribution" ? "text-emerald-600" : "text-red-600"}`}>
+                {e.type === "contribution" ? "+" : "−"}
+                {peso(e.amount)}
+              </td>
+              <td className="px-4 py-2 text-right font-medium">{peso(e.balance)}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr className="border-t border-slate-200 font-semibold">
+            <td className="px-4 py-2" colSpan={4}>Fund balance</td>
+            <td className="px-4 py-2 text-right">{peso(data.balance)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
+
+function OverdueTab({ groupId }: { groupId: number }) {
+  const { data, error } = useLoad<OverdueItem[]>(`/groups/${groupId}/overdue`);
+  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (!data) return null;
+  if (data.length === 0) return <p className="card text-sm text-slate-500">Everyone is up to date.</p>;
+  return (
+    <ul className="space-y-2">
+      {data.map((o) => (
+        <li key={`${o.cycle}-${o.userId}`} className="card flex items-center justify-between py-3">
+          <div>
+            <p className="font-medium">{o.name}</p>
+            <p className="text-xs text-slate-500">
+              Cycle {o.cycle} · due {fmtDate(o.dueDate)} · {o.daysLate} day{o.daysLate === 1 ? "" : "s"} late
+            </p>
+          </div>
+          <a
+            className="btn-ghost"
+            href={`mailto:${o.email}?subject=${encodeURIComponent(`Paluwagan reminder: cycle ${o.cycle}`)}&body=${encodeURIComponent(`Hi ${o.name}, friendly reminder that your ${peso(o.amount)} for cycle ${o.cycle} was due on ${o.dueDate}. Salamat!`)}`}

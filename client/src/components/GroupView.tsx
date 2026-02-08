@@ -211,3 +211,45 @@ function OverdueTab({ groupId }: { groupId: number }) {
           <a
             className="btn-ghost"
             href={`mailto:${o.email}?subject=${encodeURIComponent(`Paluwagan reminder: cycle ${o.cycle}`)}&body=${encodeURIComponent(`Hi ${o.name}, friendly reminder that your ${peso(o.amount)} for cycle ${o.cycle} was due on ${o.dueDate}. Salamat!`)}`}
+          >
+            Send reminder
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const ACTION_LABEL: Record<string, string> = {
+  "group.created": "created the group",
+  "contribution.recorded": "recorded a contribution",
+  "payout.requested": "requested a payout",
+  "payout.approved": "approved a payout",
+  "payout.released": "released a payout",
+};
+
+function AuditTab({ groupId, nameOf }: { groupId: number; nameOf: (id: number) => string }) {
+  const { data, error } = useLoad<AuditItem[]>(`/groups/${groupId}/audit`);
+  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (!data) return null;
+  return (
+    <ul className="card divide-y divide-slate-100 p-0 text-sm">
+      {data.map((a) => {
+        const d = a.details as { cycle?: number; amount?: number; recipientId?: number; approvals?: number; required?: number; proofNote?: string };
+        return (
+          <li key={a.id} className="flex flex-wrap justify-between gap-2 px-4 py-2">
+            <span>
+              <b>{a.actor}</b> {ACTION_LABEL[a.action] ?? a.action}
+              {d.cycle !== undefined && <> · cycle {d.cycle}</>}
+              {d.recipientId !== undefined && <> · to {nameOf(d.recipientId)}</>}
+              {d.amount !== undefined && <> · {peso(d.amount)}</>}
+              {d.approvals !== undefined && <> · {d.approvals}/{d.required}</>}
+              {d.proofNote && <span className="text-slate-400"> · {d.proofNote}</span>}
+            </span>
+            <span className="text-xs text-slate-400">{new Date(a.at).toLocaleString("en-PH")}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}

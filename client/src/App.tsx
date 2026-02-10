@@ -21,3 +21,14 @@ export default function App() {
   function logout() {
     tokenStore.clear();
     setUser(null);
+    setOpenGroup(null);
+  }
+
+  if (checking) return <p className="p-8 text-sm text-slate-500">Loading…</p>;
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+          <button onClick={() => setOpenGroup(null)} className="text-lg font-bold text-brand">
+            Paluwagan

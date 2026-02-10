@@ -43,3 +43,14 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-8">
+        {!user ? (
+          <AuthForm onAuthed={setUser} />
+        ) : openGroup ? (
+          <GroupView groupId={openGroup} me={user} onBack={() => setOpenGroup(null)} />
+        ) : (
+          <GroupList onOpen={setOpenGroup} />
+        )}
+      </main>
+    </div>
+  );
+}

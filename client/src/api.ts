@@ -12,3 +12,10 @@ export class ApiError extends Error {
   }
 }
 
+export async function api<T>(path: string, options: { method?: string; body?: unknown } = {}): Promise<T> {
+  const token = tokenStore.get();
+  const res = await fetch(`/api${path}`, {
+    method: options.method ?? "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),

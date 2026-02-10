@@ -10,3 +10,14 @@ export default function App() {
   const [checking, setChecking] = useState(true);
   const [openGroup, setOpenGroup] = useState<number | null>(null);
 
+  useEffect(() => {
+    if (!tokenStore.get()) return setChecking(false);
+    api<User>("/me")
+      .then(setUser)
+      .catch(() => tokenStore.clear())
+      .finally(() => setChecking(false));
+  }, []);
+
+  function logout() {
+    tokenStore.clear();
+    setUser(null);

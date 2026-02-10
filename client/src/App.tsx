@@ -32,3 +32,14 @@ export default function App() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <button onClick={() => setOpenGroup(null)} className="text-lg font-bold text-brand">
             Paluwagan
+          </button>
+          {user && (
+            <div className="flex items-center gap-3 text-sm">
+              <span className="text-slate-500">{user.name}</span>
+              <button onClick={logout} className="btn-ghost">Log out</button>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-5xl px-4 py-8">

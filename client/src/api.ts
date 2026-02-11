@@ -26,3 +26,10 @@ export async function api<T>(path: string, options: { method?: string; body?: un
   const data = text ? JSON.parse(text) : null;
   if (!res.ok) throw new ApiError(res.status, data?.error ?? `Request failed (${res.status})`);
   return data as T;
+}
+
+export const peso = (n: number) =>
+  new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(n);
+
+export const fmtDate = (iso: string) =>
+  new Date(iso.length === 10 ? iso + "T00:00:00" : iso).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });

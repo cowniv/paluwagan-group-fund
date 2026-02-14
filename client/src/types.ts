@@ -54,3 +54,17 @@ export interface GroupDetail {
   cycles: Cycle[];
 }
 
+export interface LedgerEntry {
+  type: "contribution" | "payout";
+  at: string;
+  cycle: number;
+  amount: number;
+  who: string;
+  note: string;
+  balance: number;
+}
+
+export interface OverdueItem {
+  cycle: number;
+  dueDate: string;
+  userId: number;

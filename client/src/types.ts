@@ -26,3 +26,17 @@ export interface Payout {
   recipientId: number;
   amount: number;
   status: "pending" | "released";
+  createdAt: string;
+  releasedAt: string | null;
+  approvals: { userId: number; name: string; at: string }[];
+  required: number;
+}
+
+export interface Cycle {
+  cycle: number;
+  dueDate: string;
+  recipientId: number;
+  payments: { userId: number; paid: boolean; proofNote: string | null; paidAt: string | null }[];
+  paidCount: number;
+  payout: Payout | null;
+}

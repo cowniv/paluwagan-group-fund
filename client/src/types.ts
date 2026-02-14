@@ -40,3 +40,17 @@ export interface Cycle {
   paidCount: number;
   payout: Payout | null;
 }
+
+export interface GroupDetail {
+  id: number;
+  name: string;
+  contributionAmount: number;
+  frequency: Frequency;
+  startDate: string;
+  pot: number;
+  requiredApprovals: number;
+  currentCycle: number;
+  members: Member[];
+  cycles: Cycle[];
+}
+

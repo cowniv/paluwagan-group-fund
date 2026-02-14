@@ -68,3 +68,16 @@ export interface OverdueItem {
   cycle: number;
   dueDate: string;
   userId: number;
+  name: string;
+  email: string;
+  amount: number;
+  daysLate: number;
+}
+
+export interface AuditItem {
+  id: number;
+  action: string;
+  actor: string;
+  details: Record<string, unknown>;
+  at: string;
+}

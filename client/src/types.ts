@@ -12,3 +12,17 @@ export interface GroupSummary {
   contributionAmount: number;
   frequency: Frequency;
   startDate: string;
+  memberCount: number;
+  currentCycle: number;
+}
+
+export interface Member extends User {
+  position: number;
+}
+
+export interface Payout {
+  id: number;
+  cycle: number;
+  recipientId: number;
+  amount: number;
+  status: "pending" | "released";

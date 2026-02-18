@@ -25,3 +25,17 @@ CREATE TABLE IF NOT EXISTS groups (
 CREATE TABLE IF NOT EXISTS members (
   group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
   user_id  INTEGER NOT NULL REFERENCES users(id),
+  position INTEGER NOT NULL,
+  PRIMARY KEY (group_id, user_id),
+  UNIQUE (group_id, position)
+);
+
+CREATE TABLE IF NOT EXISTS contributions (
+  id          INTEGER PRIMARY KEY,
+  group_id    INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  cycle       INTEGER NOT NULL,
+  user_id     INTEGER NOT NULL REFERENCES users(id),
+  amount      INTEGER NOT NULL,
+  proof_note  TEXT NOT NULL,
+  created_at  TEXT NOT NULL,
+  UNIQUE (group_id, cycle, user_id)

@@ -52,3 +52,17 @@ CREATE TABLE IF NOT EXISTS payouts (
   created_at   TEXT NOT NULL,
   released_at  TEXT,
   UNIQUE (group_id, cycle)
+);
+
+CREATE TABLE IF NOT EXISTS payout_approvals (
+  payout_id  INTEGER NOT NULL REFERENCES payouts(id) ON DELETE CASCADE,
+  user_id    INTEGER NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (payout_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+  id         INTEGER PRIMARY KEY,
+  group_id   INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  actor_id   INTEGER REFERENCES users(id),
+  action     TEXT NOT NULL,

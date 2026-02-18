@@ -134,3 +134,71 @@ export function createApp(db, { jwtSecret, now = () => new Date(), random = Math
 
   app.get(
     "/api/me",
+    auth,
+    wrap((req, res) => {
+      const user = db.prepare("SELECT id, email, name FROM users WHERE id = ?").get(req.userId);
+      if (!user) throw new HttpError(401, "User no longer exists");
+      res.json(user);
+    })
+  );
+
+  // ---------- groups ----------
+  app.get(
+    "/api/groups",
+    auth,
+    wrap((req, res) => {
+      const groups = db
+        .prepare(
+          `SELECT g.*, (SELECT COUNT(*) FROM members WHERE group_id = g.id) AS member_count
+           FROM groups g JOIN members m ON m.group_id = g.id
+           WHERE m.user_id = ? ORDER BY g.created_at DESC, g.id DESC`
+        )
+        .all(req.userId);
+      res.json(
+        groups.map((g) => ({
+          id: g.id,
+          name: g.name,
+          contributionAmount: g.contribution_amount,
+          frequency: g.frequency,
+          startDate: g.start_date,
+          memberCount: g.member_count,
+          currentCycle: currentCycle(g.start_date, g.frequency, g.member_count, today()),
+        }))
+      );
+    })
+  );
+
+  app.post(
+    "/api/groups",
+    auth,
+    wrap((req, res) => {
+      const { name, contributionAmount, frequency, startDate, memberEmails = [], shuffle = false } = req.body ?? {};
+      if (typeof name !== "string" || !name.trim()) throw new HttpError(400, "Group name is required");
+      if (!Number.isInteger(contributionAmount) || contributionAmount <= 0) throw new HttpError(400, "Contribution must be a positive whole number");
+      if (!(frequency in FREQUENCIES)) throw new HttpError(400, "Frequency must be weekly, biweekly or monthly");
+      if (typeof startDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) throw new HttpError(400, "Start date must be YYYY-MM-DD");
+      if (!Array.isArray(memberEmails)) throw new HttpError(400, "memberEmails must be a list");
+
+      // creator is always a member; other members must already have accounts
+      const creator = db.prepare("SELECT id, email FROM users WHERE id = ?").get(req.userId);
+      const emails = [...new Set([creator.email, ...memberEmails.map((e) => String(e).trim().toLowerCase())])];
+      const ids = [];
+      const missing = [];
+      for (const email of emails) {
+        const u = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
+        if (u) ids.push(u.id);
+        else missing.push(email);
+      }
+      if (missing.length) throw new HttpError(400, `No account found for: ${missing.join(", ")}`);
+      if (ids.length < 3) throw new HttpError(400, "A paluwagan needs at least 3 members");
+
+      const rotation = buildRotation(ids, { shuffle: Boolean(shuffle), random });
+
+      const groupId = db.transaction(() => {
+        const { lastInsertRowid } = db
+          .prepare("INSERT INTO groups (name, contribution_amount, frequency, start_date, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+          .run(name.trim(), contributionAmount, frequency, startDate, req.userId, nowIso());
+        const gid = Number(lastInsertRowid);
+        const insert = db.prepare("INSERT INTO members (group_id, user_id, position) VALUES (?, ?, ?)");
+        rotation.forEach((uid, i) => insert.run(gid, uid, i + 1));
+        audit(gid, req.userId, "group.created", { name: name.trim(), contributionAmount, frequency, startDate, rotation });

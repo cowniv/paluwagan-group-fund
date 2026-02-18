@@ -270,3 +270,71 @@ export function createApp(db, { jwtSecret, now = () => new Date(), random = Math
         db.prepare("INSERT INTO contributions (group_id, cycle, user_id, amount, proof_note, created_at) VALUES (?, ?, ?, ?, ?, ?)")
           .run(groupId, cycle, req.userId, group.contribution_amount, proofNote, nowIso());
         audit(groupId, req.userId, "contribution.recorded", { cycle, amount: group.contribution_amount, proofNote });
+      })();
+      res.status(201).json({ ok: true });
+    })
+  );
+
+  // ---------- payouts ----------
+  app.post(
+    "/api/groups/:id/payouts",
+    auth,
+    wrap((req, res) => {
+      const groupId = Number(req.params.id);
+      const { group, members, rotation } = loadGroup(groupId, req.userId);
+      const cycle = Number(req.body?.cycle);
+      if (!Number.isInteger(cycle) || cycle < 1 || cycle > rotation.length) throw new HttpError(400, `Cycle must be 1 to ${rotation.length}`);
+
+      const existingPayout = db.prepare("SELECT 1 FROM payouts WHERE group_id = ? AND cycle = ?").get(groupId, cycle);
+      const blocker = payoutBlocker({ paidUserIds: paidByCycle(groupId)[cycle] ?? [], memberIds: rotation, existingPayout });
+      if (blocker) throw new HttpError(409, blocker);
+
+      const recipientId = recipientForCycle(rotation, cycle);
+      const amount = potSize(group.contribution_amount, members.length);
+      const id = db.transaction(() => {
+        const { lastInsertRowid } = db
+          .prepare("INSERT INTO payouts (group_id, cycle, recipient_id, amount, requested_by, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+          .run(groupId, cycle, recipientId, amount, req.userId, nowIso());
+        audit(groupId, req.userId, "payout.requested", { cycle, recipientId, amount, required: requiredApprovals(members.length) });
+        return Number(lastInsertRowid);
+      })();
+      res.status(201).json({ id });
+    })
+  );
+
+  app.post(
+    "/api/groups/:id/payouts/:payoutId/approve",
+    auth,
+    wrap((req, res) => {
+      const groupId = Number(req.params.id);
+      const { members } = loadGroup(groupId, req.userId);
+      const payout = db.prepare("SELECT * FROM payouts WHERE id = ? AND group_id = ?").get(Number(req.params.payoutId), groupId);
+      if (!payout) throw new HttpError(404, "Payout not found");
+      if (payout.status === "released") throw new HttpError(409, "This payout was already released");
+      if (payout.recipient_id === req.userId) throw new HttpError(403, "You can't approve your own payout");
+      if (db.prepare("SELECT 1 FROM payout_approvals WHERE payout_id = ? AND user_id = ?").get(payout.id, req.userId)) {
+        throw new HttpError(409, "You already approved this payout");
+      }
+
+      const result = db.transaction(() => {
+        db.prepare("INSERT INTO payout_approvals (payout_id, user_id, created_at) VALUES (?, ?, ?)").run(payout.id, req.userId, nowIso());
+        const { n } = db.prepare("SELECT COUNT(*) AS n FROM payout_approvals WHERE payout_id = ?").get(payout.id);
+        audit(groupId, req.userId, "payout.approved", { payoutId: payout.id, cycle: payout.cycle, approvals: n, required: requiredApprovals(members.length) });
+        if (isApproved(n, members.length)) {
+          db.prepare("UPDATE payouts SET status = 'released', released_at = ? WHERE id = ?").run(nowIso(), payout.id);
+          audit(groupId, null, "payout.released", { payoutId: payout.id, cycle: payout.cycle, recipientId: payout.recipient_id, amount: payout.amount });
+          return { approvals: n, released: true };
+        }
+        return { approvals: n, released: false };
+      })();
+      res.json({ ...result, required: requiredApprovals(members.length) });
+    })
+  );
+
+  // ---------- reports ----------
+  app.get(
+    "/api/groups/:id/ledger",
+    auth,
+    wrap((req, res) => {
+      const groupId = Number(req.params.id);
+      loadGroup(groupId, req.userId);

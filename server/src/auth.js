@@ -14,3 +14,7 @@ export function requireAuth(secret) {
       req.userId = Number(payload.sub);
       next();
     } catch {
+      res.status(401).json({ error: "Session expired, please log in again" });
+    }
+  };
+}

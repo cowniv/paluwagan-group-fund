@@ -338,3 +338,71 @@ export function createApp(db, { jwtSecret, now = () => new Date(), random = Math
     wrap((req, res) => {
       const groupId = Number(req.params.id);
       loadGroup(groupId, req.userId);
+      const contributions = db
+        .prepare(
+          `SELECT c.id, c.cycle, c.amount, c.proof_note, c.created_at, u.name
+           FROM contributions c JOIN users u ON u.id = c.user_id WHERE c.group_id = ?`
+        )
+        .all(groupId)
+        .map((c) => ({ type: "contribution", seq: c.id, at: c.created_at, cycle: c.cycle, amount: c.amount, who: c.name, note: c.proof_note }));
+      const payouts = db
+        .prepare(
+          `SELECT p.id, p.cycle, p.amount, p.released_at, u.name
+           FROM payouts p JOIN users u ON u.id = p.recipient_id
+           WHERE p.group_id = ? AND p.status = 'released'`
+        )
+        .all(groupId)
+        .map((p) => ({ type: "payout", seq: 1e9 + p.id, at: p.released_at, cycle: p.cycle, amount: p.amount, who: p.name, note: `Pot for cycle ${p.cycle}` }));
+      const ledger = buildLedger([...contributions, ...payouts]);
+      res.json({ entries: ledger, balance: ledger.at(-1)?.balance ?? 0 });
+    })
+  );
+
+  app.get(
+    "/api/groups/:id/overdue",
+    auth,
+    wrap((req, res) => {
+      const groupId = Number(req.params.id);
+      const { group, members, rotation } = loadGroup(groupId, req.userId);
+      const list = overdueList({
+        rotationLength: rotation.length,
+        startDate: group.start_date,
+        frequency: group.frequency,
+        memberIds: rotation,
+        paidByCycle: paidByCycle(groupId),
+        today: today(),
+      });
+      const byId = Object.fromEntries(members.map((m) => [m.id, m]));
+      res.json(list.map((o) => ({ ...o, name: byId[o.userId].name, email: byId[o.userId].email, amount: group.contribution_amount })));
+    })
+  );
+
+  app.get(
+    "/api/groups/:id/audit",
+    auth,
+    wrap((req, res) => {
+      const groupId = Number(req.params.id);
+      loadGroup(groupId, req.userId);
+      const rows = db
+        .prepare(
+          `SELECT a.id, a.action, a.details, a.created_at, u.name AS actor
+           FROM audit_log a LEFT JOIN users u ON u.id = a.actor_id
+           WHERE a.group_id = ? ORDER BY a.id DESC`
+        )
+        .all(groupId);
+      res.json(rows.map((r) => ({ id: r.id, action: r.action, actor: r.actor ?? "system", details: JSON.parse(r.details), at: r.created_at })));
+    })
+  );
+
+  app.use("/api", (_req, res) => res.status(404).json({ error: "Route not found" }));
+
+  // central error handler
+  app.use((err, _req, res, _next) => {
+    if (err instanceof HttpError) return res.status(err.status).json({ error: err.message });
+    if (err.type === "entity.parse.failed") return res.status(400).json({ error: "Invalid JSON body" });
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong" });
+  });
+
+  return app;
+}

@@ -202,3 +202,71 @@ export function createApp(db, { jwtSecret, now = () => new Date(), random = Math
         const insert = db.prepare("INSERT INTO members (group_id, user_id, position) VALUES (?, ?, ?)");
         rotation.forEach((uid, i) => insert.run(gid, uid, i + 1));
         audit(gid, req.userId, "group.created", { name: name.trim(), contributionAmount, frequency, startDate, rotation });
+        return gid;
+      })();
+
+      res.status(201).json({ id: groupId });
+    })
+  );
+
+  app.get(
+    "/api/groups/:id",
+    auth,
+    wrap((req, res) => {
+      const groupId = Number(req.params.id);
+      const { group, members, rotation } = loadGroup(groupId, req.userId);
+      const paid = paidByCycle(groupId);
+      const payouts = db.prepare("SELECT * FROM payouts WHERE group_id = ?").all(groupId);
+      const contributions = db.prepare("SELECT * FROM contributions WHERE group_id = ?").all(groupId);
+
+      const cycles = rotation.map((_, i) => {
+        const cycle = i + 1;
+        const payout = payouts.find((p) => p.cycle === cycle);
+        return {
+          cycle,
+          dueDate: cycleDueDate(group.start_date, group.frequency, cycle),
+          recipientId: recipientForCycle(rotation, cycle),
+          payments: members.map((m) => {
+            const c = contributions.find((x) => x.cycle === cycle && x.user_id === m.id);
+            return { userId: m.id, paid: Boolean(c), proofNote: c?.proof_note ?? null, paidAt: c?.created_at ?? null };
+          }),
+          paidCount: (paid[cycle] ?? []).length,
+          payout: payout ? payoutWithVotes(payout, members.length) : null,
+        };
+      });
+
+      res.json({
+        id: group.id,
+        name: group.name,
+        contributionAmount: group.contribution_amount,
+        frequency: group.frequency,
+        startDate: group.start_date,
+        pot: potSize(group.contribution_amount, members.length),
+        requiredApprovals: requiredApprovals(members.length),
+        currentCycle: currentCycle(group.start_date, group.frequency, members.length, today()),
+        members,
+        cycles,
+      });
+    })
+  );
+
+  // ---------- contributions ----------
+  app.post(
+    "/api/groups/:id/contributions",
+    auth,
+    wrap((req, res) => {
+      const groupId = Number(req.params.id);
+      const { group, rotation } = loadGroup(groupId, req.userId);
+      const cycle = Number(req.body?.cycle);
+      const proofNote = String(req.body?.proofNote ?? "").trim();
+      if (!Number.isInteger(cycle) || cycle < 1 || cycle > rotation.length) throw new HttpError(400, `Cycle must be 1 to ${rotation.length}`);
+      if (!proofNote) throw new HttpError(400, "Add a proof note (e.g. GCash ref no.)");
+      if (proofNote.length > 200) throw new HttpError(400, "Proof note is too long");
+
+      const exists = db.prepare("SELECT 1 FROM contributions WHERE group_id = ? AND cycle = ? AND user_id = ?").get(groupId, cycle, req.userId);
+      if (exists) throw new HttpError(409, "You already paid for this cycle");
+
+      db.transaction(() => {
+        db.prepare("INSERT INTO contributions (group_id, cycle, user_id, amount, proof_note, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+          .run(groupId, cycle, req.userId, group.contribution_amount, proofNote, nowIso());
+        audit(groupId, req.userId, "contribution.recorded", { cycle, amount: group.contribution_amount, proofNote });

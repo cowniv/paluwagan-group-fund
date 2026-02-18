@@ -11,3 +11,6 @@
     "noEmit": true,
     "skipLibCheck": true,
     "isolatedModules": true
+  },
+  "include": ["src"]
+}

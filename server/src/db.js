@@ -39,3 +39,16 @@ CREATE TABLE IF NOT EXISTS contributions (
   proof_note  TEXT NOT NULL,
   created_at  TEXT NOT NULL,
   UNIQUE (group_id, cycle, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS payouts (
+  id           INTEGER PRIMARY KEY,
+  group_id     INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  cycle        INTEGER NOT NULL,
+  recipient_id INTEGER NOT NULL REFERENCES users(id),
+  amount       INTEGER NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','released')),
+  requested_by INTEGER NOT NULL REFERENCES users(id),
+  created_at   TEXT NOT NULL,
+  released_at  TEXT,
+  UNIQUE (group_id, cycle)

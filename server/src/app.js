@@ -66,3 +66,71 @@ export function createApp(db, { jwtSecret, now = () => new Date(), random = Math
       (map[c.cycle] ??= []).push(c.user_id);
     }
     return map;
+  }
+
+  function payoutWithVotes(payout, memberCount) {
+    const approvals = db
+      .prepare(
+        `SELECT a.user_id AS userId, u.name, a.created_at AS at
+         FROM payout_approvals a JOIN users u ON u.id = a.user_id WHERE a.payout_id = ?`
+      )
+      .all(payout.id);
+    return {
+      id: payout.id,
+      cycle: payout.cycle,
+      recipientId: payout.recipient_id,
+      amount: payout.amount,
+      status: payout.status,
+      createdAt: payout.created_at,
+      releasedAt: payout.released_at,
+      approvals,
+      required: requiredApprovals(memberCount),
+    };
+  }
+
+  const wrap = (fn) => (req, res, next) => {
+    try {
+      fn(req, res, next);
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  // ---------- auth ----------
+  app.get("/api/health", (_req, res) => res.json({ ok: true }));
+
+  app.post(
+    "/api/auth/register",
+    wrap((req, res) => {
+      const { email, name, password } = req.body ?? {};
+      if (typeof email !== "string" || !EMAIL_RE.test(email)) throw new HttpError(400, "A valid email is required");
+      if (typeof name !== "string" || !name.trim()) throw new HttpError(400, "Name is required");
+      if (typeof password !== "string" || password.length < 8) throw new HttpError(400, "Password must be at least 8 characters");
+      const normalized = email.trim().toLowerCase();
+      if (db.prepare("SELECT 1 FROM users WHERE email = ?").get(normalized)) throw new HttpError(409, "Email is already registered");
+      const hash = bcrypt.hashSync(password, 10);
+      const { lastInsertRowid } = db
+        .prepare("INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)")
+        .run(normalized, name.trim(), hash);
+      const user = { id: Number(lastInsertRowid), email: normalized, name: name.trim() };
+      res.status(201).json({ token: signToken(user, jwtSecret), user });
+    })
+  );
+
+  app.post(
+    "/api/auth/login",
+    wrap((req, res) => {
+      const { email, password } = req.body ?? {};
+      const row = db.prepare("SELECT * FROM users WHERE email = ?").get(String(email ?? "").trim().toLowerCase());
+      if (!row || !bcrypt.compareSync(String(password ?? ""), row.password_hash)) {
+        throw new HttpError(401, "Wrong email or password");
+      }
+      const user = { id: row.id, email: row.email, name: row.name };
+      res.json({ token: signToken(user, jwtSecret), user });
+    })
+  );
+
+  const auth = requireAuth(jwtSecret);
+
+  app.get(
+    "/api/me",

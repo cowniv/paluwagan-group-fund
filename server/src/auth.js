@@ -10,3 +10,7 @@ export function requireAuth(secret) {
     const token = header.startsWith("Bearer ") ? header.slice(7) : null;
     if (!token) return res.status(401).json({ error: "Login required" });
     try {
+      const payload = jwt.verify(token, secret);
+      req.userId = Number(payload.sub);
+      next();
+    } catch {

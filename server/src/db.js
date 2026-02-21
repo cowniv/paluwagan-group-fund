@@ -66,3 +66,16 @@ CREATE TABLE IF NOT EXISTS audit_log (
   group_id   INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
   actor_id   INTEGER REFERENCES users(id),
   action     TEXT NOT NULL,
+  details    TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL
+);
+`;
+
+export function openDb(file = ":memory:") {
+  if (file !== ":memory:") mkdirSync(dirname(file), { recursive: true });
+  const db = new Database(file);
+  db.pragma("journal_mode = WAL");
+  db.pragma("foreign_keys = ON");
+  db.exec(SCHEMA);
+  return db;
+}

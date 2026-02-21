@@ -53,3 +53,22 @@ export function currentCycle(startDate, frequency, memberCount, today) {
   return cycle;
 }
 
+/** The pot for one cycle. */
+export function potSize(contributionAmount, memberCount) {
+  return contributionAmount * memberCount;
+}
+
+/**
+ * Approvals needed to release a payout: a strict majority of the members who
+ * can vote. The recipient can't vote on their own payout.
+ */
+export function requiredApprovals(memberCount) {
+  const voters = memberCount - 1;
+  return Math.floor(voters / 2) + 1;
+}
+
+export function isApproved(approvalCount, memberCount) {
+  return approvalCount >= requiredApprovals(memberCount);
+}
+
+/** Can a payout be requested for this cycle? Returns null if OK, or the reason. */

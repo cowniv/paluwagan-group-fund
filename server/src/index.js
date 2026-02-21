@@ -15,3 +15,7 @@ const server = app.listen(PORT, () => console.log(`Paluwagan API on http://local
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.on(signal, () => server.close(() => {
+    db.close();
+    process.exit(0);
+  }));
+}

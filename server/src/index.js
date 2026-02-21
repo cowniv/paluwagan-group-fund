@@ -11,3 +11,7 @@ if (!JWT_SECRET) {
 const db = openDb(process.env.DB_FILE || "data/paluwagan.db");
 const app = createApp(db, { jwtSecret: JWT_SECRET, corsOrigin: process.env.CLIENT_ORIGIN || true });
 
+const server = app.listen(PORT, () => console.log(`Paluwagan API on http://localhost:${PORT}`));
+
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.on(signal, () => server.close(() => {

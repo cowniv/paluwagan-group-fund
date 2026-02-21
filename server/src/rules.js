@@ -72,3 +72,21 @@ export function isApproved(approvalCount, memberCount) {
 }
 
 /** Can a payout be requested for this cycle? Returns null if OK, or the reason. */
+export function payoutBlocker({ paidUserIds, memberIds, existingPayout }) {
+  if (existingPayout) return "A payout for this cycle already exists";
+  const unpaid = memberIds.filter((id) => !paidUserIds.includes(id));
+  if (unpaid.length) return `${unpaid.length} member(s) haven't paid this cycle yet`;
+  return null;
+}
+
+/**
+ * Ledger with running balance. Contributions add to the fund, released payouts take from it.
+ * entries: [{ type: 'contribution'|'payout', amount, at, ... }]
+ */
+export function buildLedger(entries) {
+  const sorted = [...entries].sort((a, b) => (a.at === b.at ? a.seq - b.seq : a.at < b.at ? -1 : 1));
+  let balance = 0;
+  return sorted.map((e) => {
+    balance += e.type === "contribution" ? e.amount : -e.amount;
+    return { ...e, balance };
+  });

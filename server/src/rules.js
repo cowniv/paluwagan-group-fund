@@ -35,3 +35,21 @@ export function cycleDueDate(startDate, frequency, cycle) {
     d.setUTCMonth(d.getUTCMonth() + (cycle - 1));
     // clamp e.g. Jan 31 -> Feb 28
     const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+    d.setUTCDate(Math.min(day, last));
+  } else {
+    const days = FREQUENCIES[frequency];
+    if (!days) throw new Error(`unknown frequency "${frequency}"`);
+    d.setUTCDate(d.getUTCDate() + days * (cycle - 1));
+  }
+  return d.toISOString().slice(0, 10);
+}
+
+/** The cycle that is currently open: the latest one whose due date has arrived (min 1, max N). */
+export function currentCycle(startDate, frequency, memberCount, today) {
+  let cycle = 1;
+  for (let c = 2; c <= memberCount; c++) {
+    if (cycleDueDate(startDate, frequency, c) <= today) cycle = c;
+  }
+  return cycle;
+}
+

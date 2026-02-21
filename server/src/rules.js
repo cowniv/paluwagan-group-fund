@@ -17,3 +17,21 @@ export function buildRotation(userIds, { shuffle = false, random = Math.random }
   }
   return order;
 }
+
+/** Who receives the pot in a given cycle (1-based). */
+export function recipientForCycle(rotation, cycle) {
+  if (!Number.isInteger(cycle) || cycle < 1 || cycle > rotation.length) {
+    throw new RangeError(`cycle must be between 1 and ${rotation.length}`);
+  }
+  return rotation[cycle - 1];
+}
+
+/** Due date of a cycle, as YYYY-MM-DD. Cycle 1 is due on the start date. */
+export function cycleDueDate(startDate, frequency, cycle) {
+  const d = new Date(startDate + "T00:00:00Z");
+  if (frequency === "monthly") {
+    const day = d.getUTCDate();
+    d.setUTCDate(1);
+    d.setUTCMonth(d.getUTCMonth() + (cycle - 1));
+    // clamp e.g. Jan 31 -> Feb 28
+    const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();

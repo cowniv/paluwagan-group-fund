@@ -90,3 +90,21 @@ export function buildLedger(entries) {
     balance += e.type === "contribution" ? e.amount : -e.amount;
     return { ...e, balance };
   });
+}
+
+/** Members who missed a cycle whose due date has passed. */
+export function overdueList({ rotationLength, startDate, frequency, memberIds, paidByCycle, today }) {
+  const out = [];
+  for (let cycle = 1; cycle <= rotationLength; cycle++) {
+    const dueDate = cycleDueDate(startDate, frequency, cycle);
+    if (dueDate >= today) break;
+    const paid = paidByCycle[cycle] ?? [];
+    for (const userId of memberIds) {
+      if (!paid.includes(userId)) {
+        const daysLate = Math.round((Date.parse(today) - Date.parse(dueDate)) / 86_400_000);
+        out.push({ cycle, dueDate, userId, daysLate });
+      }
+    }
+  }
+  return out;
+}

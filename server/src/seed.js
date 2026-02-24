@@ -40,3 +40,14 @@ const pay = (cycle, idx, hour) => {
 };
 
 // cycle 1: everyone paid, payout to Ana released (3 of 4 approvals)
+[0, 1, 2, 3, 4].forEach((i) => pay(1, i, 2 + i));
+const p1 = Number(db.prepare("INSERT INTO payouts (group_id, cycle, recipient_id, amount, status, requested_by, created_at, released_at) VALUES (?, 1, ?, 2500, 'released', ?, ?, ?)").run(groupId, ids[0], ids[1], at(1, 8), at(1, 12)).lastInsertRowid);
+log(ids[1], "payout.requested", { cycle: 1, recipientId: ids[0], amount: 2500, required: 3 }, at(1, 8));
+[1, 2, 3].forEach((i, k) => {
+  db.prepare("INSERT INTO payout_approvals (payout_id, user_id, created_at) VALUES (?, ?, ?)").run(p1, ids[i], at(1, 9 + k));
+  log(ids[i], "payout.approved", { payoutId: p1, cycle: 1, approvals: k + 1, required: 3 }, at(1, 9 + k));
+});
+log(null, "payout.released", { payoutId: p1, cycle: 1, recipientId: ids[0], amount: 2500 }, at(1, 12));
+
+// cycle 2: everyone paid, payout to Ben pending with 1 approval
+[0, 1, 2, 3, 4].forEach((i) => pay(2, i, 2 + i));

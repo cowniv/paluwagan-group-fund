@@ -51,3 +51,13 @@ log(null, "payout.released", { payoutId: p1, cycle: 1, recipientId: ids[0], amou
 
 // cycle 2: everyone paid, payout to Ben pending with 1 approval
 [0, 1, 2, 3, 4].forEach((i) => pay(2, i, 2 + i));
+const p2 = Number(db.prepare("INSERT INTO payouts (group_id, cycle, recipient_id, amount, requested_by, created_at) VALUES (?, 2, ?, 2500, ?, ?)").run(groupId, ids[1], ids[0], at(2, 8)).lastInsertRowid);
+log(ids[0], "payout.requested", { cycle: 2, recipientId: ids[1], amount: 2500, required: 3 }, at(2, 8));
+db.prepare("INSERT INTO payout_approvals (payout_id, user_id, created_at) VALUES (?, ?, ?)").run(p2, ids[2], at(2, 9));
+log(ids[2], "payout.approved", { payoutId: p2, cycle: 2, approvals: 1, required: 3 }, at(2, 9));
+
+// cycle 3: Dino and Ella haven't paid (shows up in Overdue)
+[0, 1, 2].forEach((i) => pay(3, i, 2 + i));
+
+db.close();
+console.log(`Seeded ${file}. Log in as ana@example.com / password123`);

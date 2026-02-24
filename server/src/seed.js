@@ -30,3 +30,13 @@ const groupId = Number(
 ids.forEach((id, i) => db.prepare("INSERT INTO members (group_id, user_id, position) VALUES (?, ?, ?)").run(groupId, id, i + 1));
 
 const log = (actor, action, details, when) =>
+  db.prepare("INSERT INTO audit_log (group_id, actor_id, action, details, created_at) VALUES (?, ?, ?, ?, ?)").run(groupId, actor, action, JSON.stringify(details), when);
+log(ids[0], "group.created", { name: "Barkada Ipon 2026", contributionAmount: 500, frequency: "weekly", startDate: start, rotation: ids }, at(1, 1));
+
+const pay = (cycle, idx, hour) => {
+  const note = `GCash ref ${1000 + cycle * 10 + idx}`;
+  db.prepare("INSERT INTO contributions (group_id, cycle, user_id, amount, proof_note, created_at) VALUES (?, ?, ?, ?, ?, ?)").run(groupId, cycle, ids[idx], 500, note, at(cycle, hour));
+  log(ids[idx], "contribution.recorded", { cycle, amount: 500, proofNote: note }, at(cycle, hour));
+};
+
+// cycle 1: everyone paid, payout to Ana released (3 of 4 approvals)

@@ -19,3 +19,14 @@ const people = [
 ];
 const ids = people.map(([email, name]) => Number(db.prepare("INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)").run(email, name, hash).lastInsertRowid));
 
+// start 3 weeks ago so cycles 1-4 are already due
+const start = new Date(Date.now() - 21 * 86_400_000).toISOString().slice(0, 10);
+const at = (cycle, hour) => `${cycleDueDate(start, "weekly", cycle)}T${String(hour).padStart(2, "0")}:00:00.000Z`;
+
+const groupId = Number(
+  db.prepare("INSERT INTO groups (name, contribution_amount, frequency, start_date, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+    .run("Barkada Ipon 2026", 500, "weekly", start, ids[0], at(1, 1)).lastInsertRowid
+);
+ids.forEach((id, i) => db.prepare("INSERT INTO members (group_id, user_id, position) VALUES (?, ?, ?)").run(groupId, id, i + 1));
+
+const log = (actor, action, details, when) =>

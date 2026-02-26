@@ -38,3 +38,23 @@ test("register users and reject bad logins", async () => {
   }
   assert.equal((await call("POST", "/auth/register", { email: "ana@example.com", name: "x", password: "password123" })).status, 409);
   assert.equal((await call("POST", "/auth/login", { email: "ana@example.com", password: "nope" })).status, 401);
+  assert.equal((await call("GET", "/groups")).status, 401);
+});
+
+test("create a group with a rotation", async () => {
+  const bad = await call("POST", "/groups", { name: "X", contributionAmount: 500, frequency: "weekly", startDate: "2026-02-02", memberEmails: ["ghost@example.com"] }, "ana");
+  assert.equal(bad.status, 400);
+
+  const r = await call("POST", "/groups", {
+    name: "Org Ipon",
+    contributionAmount: 500,
+    frequency: "weekly",
+    startDate: "2026-02-02",
+    memberEmails: ["ben@example.com", "carla@example.com", "dino@example.com"],
+  }, "ana");
+  assert.equal(r.status, 201);
+  groupId = r.body.id;
+
+  const g = (await call("GET", `/groups/${groupId}`, null, "ana")).body;
+  assert.equal(g.pot, 2000);
+  assert.equal(g.requiredApprovals, 2);

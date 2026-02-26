@@ -78,3 +78,23 @@ test("payout needs everyone paid, then a majority of other members", async () =>
   const req = await call("POST", `/groups/${groupId}/payouts`, { cycle: 1 }, "ben");
   assert.equal(req.status, 201);
   const pid = req.body.id;
+
+  // recipient (ana) can't vote for herself
+  assert.equal((await call("POST", `/groups/${groupId}/payouts/${pid}/approve`, null, "ana")).status, 403);
+
+  tick();
+  const v1 = await call("POST", `/groups/${groupId}/payouts/${pid}/approve`, null, "ben");
+  assert.deepEqual([v1.body.approvals, v1.body.released], [1, false]);
+  assert.equal((await call("POST", `/groups/${groupId}/payouts/${pid}/approve`, null, "ben")).status, 409);
+
+  tick();
+  const v2 = await call("POST", `/groups/${groupId}/payouts/${pid}/approve`, null, "carla");
+  assert.deepEqual([v2.body.approvals, v2.body.released], [2, true]);
+  assert.equal((await call("POST", `/groups/${groupId}/payouts/${pid}/approve`, null, "dino")).status, 409);
+});
+
+test("ledger balance, overdue view and audit log", async () => {
+  tick();
+  await call("POST", `/groups/${groupId}/contributions`, { cycle: 2, proofNote: "early" }, "carla");
+
+  const ledger = (await call("GET", `/groups/${groupId}/ledger`, null, "dino")).body;

@@ -98,3 +98,22 @@ test("ledger balance, overdue view and audit log", async () => {
   await call("POST", `/groups/${groupId}/contributions`, { cycle: 2, proofNote: "early" }, "carla");
 
   const ledger = (await call("GET", `/groups/${groupId}/ledger`, null, "dino")).body;
+  assert.deepEqual(ledger.entries.map((e) => e.balance), [500, 1000, 1500, 2000, 0, 500]);
+  assert.equal(ledger.balance, 500);
+
+  clock = new Date("2026-02-12T08:00:00Z"); // cycle 2 (due Feb 9) is now late
+  const overdue = (await call("GET", `/groups/${groupId}/overdue`, null, "ana")).body;
+  assert.deepEqual(overdue.map((o) => o.name).sort(), ["ana", "ben", "dino"]);
+  assert.ok(overdue.every((o) => o.daysLate === 3));
+
+  const audit = (await call("GET", `/groups/${groupId}/audit`, null, "ana")).body;
+  const actions = audit.map((a) => a.action);
+  assert.ok(actions.includes("payout.released"));
+  assert.equal(actions.at(-1), "group.created");
+});
+
+test("non-members can't see a group", async () => {
+  const r = await call("POST", "/auth/register", { email: "outsider@example.com", name: "Out", password: "password123" });
+  tokens.out = r.body.token;
+  assert.equal((await call("GET", `/groups/${groupId}`, null, "out")).status, 403);
+});

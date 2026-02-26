@@ -58,3 +58,23 @@ test("create a group with a rotation", async () => {
   const g = (await call("GET", `/groups/${groupId}`, null, "ana")).body;
   assert.equal(g.pot, 2000);
   assert.equal(g.requiredApprovals, 2);
+  assert.deepEqual(g.cycles.map((c) => c.recipientId), [ids.ana, ids.ben, ids.carla, ids.dino]);
+});
+
+test("payout needs everyone paid, then a majority of other members", async () => {
+  await call("POST", `/groups/${groupId}/contributions`, { cycle: 1, proofNote: "GCash 111" }, "ana");
+  tick();
+  assert.equal((await call("POST", `/groups/${groupId}/contributions`, { cycle: 1, proofNote: "again" }, "ana")).status, 409);
+  assert.equal((await call("POST", `/groups/${groupId}/contributions`, { cycle: 1 }, "ben")).status, 400); // proof note required
+
+  const early = await call("POST", `/groups/${groupId}/payouts`, { cycle: 1 }, "ben");
+  assert.equal(early.status, 409);
+
+  for (const who of ["ben", "carla", "dino"]) {
+    tick();
+    await call("POST", `/groups/${groupId}/contributions`, { cycle: 1, proofNote: `ref-${who}` }, who);
+  }
+  tick();
+  const req = await call("POST", `/groups/${groupId}/payouts`, { cycle: 1 }, "ben");
+  assert.equal(req.status, 201);
+  const pid = req.body.id;

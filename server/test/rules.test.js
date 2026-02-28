@@ -55,3 +55,17 @@ test("majority approval excludes the recipient", () => {
   assert.equal(isApproved(3, 5), true);
 });
 
+test("payout blocked until everyone paid, and only once per cycle", () => {
+  assert.match(payoutBlocker({ paidUserIds: [1, 2], memberIds: [1, 2, 3] }), /1 member/);
+  assert.equal(payoutBlocker({ paidUserIds: [1, 2, 3], memberIds: [1, 2, 3] }), null);
+  assert.match(payoutBlocker({ paidUserIds: [1, 2, 3], memberIds: [1, 2, 3], existingPayout: {} }), /already/);
+});
+
+test("ledger keeps a running balance in time order", () => {
+  const ledger = buildLedger([
+    { type: "payout", amount: 1500, at: "2026-02-03", seq: 10 },
+    { type: "contribution", amount: 500, at: "2026-02-01", seq: 1 },
+    { type: "contribution", amount: 500, at: "2026-02-01", seq: 2 },
+    { type: "contribution", amount: 500, at: "2026-02-02", seq: 3 },
+  ]);
+  assert.deepEqual(ledger.map((e) => e.balance), [500, 1000, 1500, 0]);

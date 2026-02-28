@@ -6,3 +6,11 @@
 
 A paluwagan is the Filipino rotating savings group: everyone chips in the same amount every cycle, and each cycle one member takes home the whole pot. It runs on trust, and it usually lives in a group chat and someone's notebook. I wanted a tracker where every payment has a proof note, every payout needs the group's approval, and every action ends up in an audit log.
 
+### Features
+- Sign up / log in with **JWT** auth (passwords hashed with **bcryptjs**)
+- Create a group: contribution amount, schedule (weekly, every 2 weeks, monthly), first due date, members by email
+- **Rotation order** for payouts, either as listed or drawn randomly (bunutan)
+- Record your contribution for a cycle with a **proof note** (e.g. a GCash reference number)
+- **Who-has-paid** status for every cycle
+- **Multi-approval payouts**: a payout can only be requested once everyone has paid, and it is released only when a **strict majority of the other members** approve. The recipient can't vote on their own payout
+- **Ledger** with a running balance (contributions in, released payouts out)

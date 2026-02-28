@@ -22,3 +22,11 @@ A paluwagan is the Filipino rotating savings group: everyone chips in the same a
 Express · better-sqlite3 · JWT (`jsonwebtoken`) · bcryptjs · React 18 · TypeScript · Vite · Tailwind CSS v4 · node:test
 
 ### Run
+```bash
+npm run install:all
+cp .env.example .env      # set JWT_SECRET
+npm run seed              # demo group, log in as ana@example.com / password123
+npm run dev               # API on :4000, web on http://localhost:5173
+npm test                  # business rules + API flow
+```
+

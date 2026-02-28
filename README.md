@@ -30,3 +30,11 @@ npm run dev               # API on :4000, web on http://localhost:5173
 npm test                  # business rules + API flow
 ```
 
+### What I practiced
+- Turning a real-world agreement into rules I can test (rotation, majority, balances)
+- Keeping business logic separate from Express and the database
+- Transactions so a vote and the payout release happen together or not at all
+- Unique constraints so nobody pays twice or votes twice
+- JWT auth and protecting routes per group membership
+- Injecting the clock so tests can "time travel" to check overdue payments
+- Running an API and a Vite client together from one root `package.json`

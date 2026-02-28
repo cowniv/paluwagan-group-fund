@@ -69,3 +69,17 @@ test("ledger keeps a running balance in time order", () => {
     { type: "contribution", amount: 500, at: "2026-02-02", seq: 3 },
   ]);
   assert.deepEqual(ledger.map((e) => e.balance), [500, 1000, 1500, 0]);
+});
+
+test("overdue lists unpaid members only for cycles already past due", () => {
+  const list = overdueList({
+    rotationLength: 3,
+    startDate: "2026-02-02",
+    frequency: "weekly",
+    memberIds: [1, 2, 3],
+    paidByCycle: { 1: [1, 2, 3], 2: [1] },
+    today: "2026-02-12",
+  });
+  // cycle 2 (due 02-09) is past due; cycle 3 (due 02-16) isn't yet
+  assert.deepEqual(list.map((o) => [o.cycle, o.userId, o.daysLate]), [[2, 2, 3], [2, 3, 3]]);
+});

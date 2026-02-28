@@ -14,3 +14,11 @@ A paluwagan is the Filipino rotating savings group: everyone chips in the same a
 - **Who-has-paid** status for every cycle
 - **Multi-approval payouts**: a payout can only be requested once everyone has paid, and it is released only when a **strict majority of the other members** approve. The recipient can't vote on their own payout
 - **Ledger** with a running balance (contributions in, released payouts out)
+- **Overdue view** with days late and a prefilled reminder email
+- **Audit log** of every action in the group
+- Business rules live in one pure module (`server/src/rules.js`) with unit tests, plus an API test that runs the whole flow on an in-memory SQLite database
+
+### Tech
+Express · better-sqlite3 · JWT (`jsonwebtoken`) · bcryptjs · React 18 · TypeScript · Vite · Tailwind CSS v4 · node:test
+
+### Run

@@ -41,3 +41,17 @@ test("due dates for weekly, biweekly and monthly (with month-end clamp)", () => 
 test("current cycle advances with time and caps at member count", () => {
   assert.equal(currentCycle("2026-02-02", "weekly", 4, "2026-01-01"), 1);
   assert.equal(currentCycle("2026-02-02", "weekly", 4, "2026-02-10"), 2);
+  assert.equal(currentCycle("2026-02-02", "weekly", 4, "2027-01-01"), 4);
+});
+
+test("majority approval excludes the recipient", () => {
+  // 5 members -> 4 voters -> need 3
+  assert.equal(requiredApprovals(5), 3);
+  // 4 members -> 3 voters -> need 2
+  assert.equal(requiredApprovals(4), 2);
+  // 3 members -> 2 voters -> need 2 (a tie is not a majority)
+  assert.equal(requiredApprovals(3), 2);
+  assert.equal(isApproved(2, 5), false);
+  assert.equal(isApproved(3, 5), true);
+});
+
